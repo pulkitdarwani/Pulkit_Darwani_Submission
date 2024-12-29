@@ -184,7 +184,7 @@ function addAIbutton() {
 
         const chatArea = document.createElement('div');
         chatArea.id = 'chatArea';
-        chatArea.style.height = '250px';
+        chatArea.style.height = '300px';
         chatArea.style.overflowY = 'auto';
         chatArea.style.marginBottom = '10px';
 
@@ -213,6 +213,7 @@ function addAIbutton() {
         inputField.style.borderRadius = '4px';
         inputField.className = 'ant-input css-19gw05y ant-input-default Input_gradient_dark_input__r0EJI py-2 px-4';
         inputField.placeholder = 'Type your message here...';
+        
 
         inputArea.appendChild(inputField);
 
@@ -228,15 +229,26 @@ function addAIbutton() {
 
         inputArea.appendChild(sendButton);
 
+        inputArea.style.marginBottom = '7px';
+
         chatbox.appendChild(inputArea);
 
         const clearButton = document.createElement('button');
         clearButton.type = 'button';
-        clearButton.className = 'ant-btn css-19gw05y ant-btn-default Button_gradient_light_button__ZDAR_ coding_ask_doubt_button__FjwXJ gap-1 py-2 px-3 overflow-hidden';
+        clearButton.className = 'ant-btn css-19gw05y ant-btn-default Button_gradient_light_button__ZDAR_ coding_ask_doubt_button__FjwXJ gap-1 py-1 px-1 overflow-hidden';
+        clearButton.style.height = '30px'; // Decrease the height of the button
         clearButton.style.position = 'absolute';
-        clearButton.style.top = '10px';
-        clearButton.style.right = '10px';
-        clearButton.innerHTML = `<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" height="20" width="20" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg><span class="coding_ask_doubt_gradient_text__FX_hZ">Clear Chat</span>`;
+        clearButton.style.top = '1px';
+        clearButton.style.right = '1px';
+        // clearButton.innerHTML = `<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" height="20" width="20" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg><span class="coding_ask_doubt_gradient_text__FX_hZ">Clear Chat</span>`;
+        clearButton.innerHTML = `
+            <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" height="20" width="20" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6m-7 3h8M4 6h16m-2 0l-1 14H7L6 6"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 10v6m4-6v6"></path>
+            </svg>
+            <span class="coding_ask_doubt_gradient_text__FX_hZ">Clear Chat</span>
+            `;
+
 
         clearButton.addEventListener('click', () => {
             const problemId = getCurrentProblemId();
@@ -244,10 +256,83 @@ function addAIbutton() {
             chatArea.innerHTML = ''; // Clear the chat area
         });
 
+        const exportButton = document.createElement('button');
+        exportButton.type = 'button';
+        exportButton.className = 'ant-btn css-19gw05y ant-btn-default Button_gradient_light_button__ZDAR_ coding_ask_doubt_button__FjwXJ gap-1 py-1 px-1 overflow-hidden';
+        exportButton.style.height = '30px';
+        exportButton.style.position = 'absolute';
+        exportButton.style.top = '35px';
+        exportButton.style.right = '1px';
+        exportButton.innerHTML = `
+            <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" height="20" width="20" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0-12l-4 4m4-4l4 4"></path>
+            <rect x="6" y="12" width="12" height="8" rx="2" ry="2"></rect>
+            </svg>
+            <span class="coding_ask_doubt_gradient_text__FX_hZ">Export</span>
+            `;
+
+
+        exportButton.addEventListener('click', () => {
+            const problemId = getCurrentProblemId();
+            const chatHistory = getChatHistory(problemId);
+            if(chatHistory[0]?.parts[0]?.text) chatHistory[0].parts[0].text = extractUserMessage(chatHistory[0].parts[0].text);
+            const chatHistoryStr = JSON.stringify(chatHistory, null, 2);
+            const blob = new Blob([chatHistoryStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chat_history_${problemId}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        chatbox.insertBefore(exportButton, chatbox.firstChild);
+
+        // Add resize functionality to the chatbox
+        chatbox.style.resize = 'vertical';
+        chatbox.style.overflow = 'auto';
+
+        // Add a resize handle
+        const resizeHandle = document.createElement('div');
+        resizeHandle.style.width = '100%';
+        resizeHandle.style.height = '10px';
+        // resizeHandle.style.background = '#ccc';
+        resizeHandle.style.cursor = 'ns-resize';
+        resizeHandle.style.position = 'absolute';
+        resizeHandle.style.bottom = '0';
+        resizeHandle.style.left = '0';
+        resizeHandle.className = 'gutter gutter-vertical';
+
+        chatbox.appendChild(resizeHandle);
+
+        let isResizing = false;
+
+        resizeHandle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'ns-resize';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            const newHeight = e.clientY - chatbox.getBoundingClientRect().top;
+            chatbox.style.height = `${newHeight}px`;
+            const chatboxHeight = newHeight;
+            const inputAreaHeight = inputArea.offsetHeight;
+            const clearButtonHeight = clearButton.offsetHeight;
+            const resizeHandleHeight = resizeHandle.offsetHeight;
+            const totalOtherElementsHeight = inputAreaHeight + clearButtonHeight + resizeHandleHeight; // Adding some padding
+            chatArea.style.height = `${chatboxHeight - totalOtherElementsHeight }px`; // Adjust chatArea height dynamically
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            document.body.style.cursor = 'default';
+        });
+
+        
         chatbox.insertBefore(clearButton, chatbox.firstChild);
-
-
         targetDiv.insertAdjacentElement('afterbegin', chatbox);
+
 
         const chatHistoryToAppend = getChatHistory(getCurrentProblemId());
 
