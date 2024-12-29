@@ -1,12 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "AZ Problem Tracker",
+  "name": "AZ AI Helper",
   "version": "0.1",
-  "author": "Lakshya Mittal",
-  "description": "A Chrome Extension that helps us track problems on AZ",
+  "author": "Pulkit Darwani",
+  "description": "A chatbot ai helper that helps you solving problems on algozenith",
   "permissions": [
-    "storage",
-    "tabs"
+    "storage","tabs"
   ],
   "content_scripts": [
     {
@@ -26,7 +25,8 @@
       "resources": [
         "assets/bookmark.png",
         "assets/delete.png",
-        "assets/play.png"
+        "assets/play.png",
+        "inject.js"
       ],
       "matches" : ["<all_urls>"]
     }
@@ -38,6 +38,6 @@
       "32": "assets/ext-icon.png"
     },
     "default_popup": "popup.html",
-    "default_title": "AZ Problem Tracker"
+    "default_title": "AZ AI Helper"
   }
 }
