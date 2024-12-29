@@ -179,6 +179,7 @@ function addAIbutton() {
         chatbox.style.marginTop = '10px';
         chatbox.style.backgroundColor = '#fff';
         chatbox.style.fontSize = '16px';
+        chatbox.style.position = 'relative';
         chatbox.style.fontFamily = 'Source Serif Pro', 'serif';
 
         const chatArea = document.createElement('div');
@@ -224,11 +225,40 @@ function addAIbutton() {
         sendButton.style.color = '#fff';
         sendButton.style.borderRadius = '4px';
         sendButton.className = 'ant-btn css-19gw05y ant-btn-default Button_gradient_dark_button__r0EJI py-2 px-4';
-            
+
         inputArea.appendChild(sendButton);
 
         chatbox.appendChild(inputArea);
+
+        const clearButton = document.createElement('button');
+        clearButton.type = 'button';
+        clearButton.className = 'ant-btn css-19gw05y ant-btn-default Button_gradient_light_button__ZDAR_ coding_ask_doubt_button__FjwXJ gap-1 py-2 px-3 overflow-hidden';
+        clearButton.style.position = 'absolute';
+        clearButton.style.top = '10px';
+        clearButton.style.right = '10px';
+        clearButton.innerHTML = `<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" height="20" width="20" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg><span class="coding_ask_doubt_gradient_text__FX_hZ">Clear Chat</span>`;
+
+        clearButton.addEventListener('click', () => {
+            const problemId = getCurrentProblemId();
+            clearChatHistory(problemId);
+            chatArea.innerHTML = ''; // Clear the chat area
+        });
+
+        chatbox.insertBefore(clearButton, chatbox.firstChild);
+
+
         targetDiv.insertAdjacentElement('afterbegin', chatbox);
+
+        const chatHistoryToAppend = getChatHistory(getCurrentProblemId());
+
+        chatHistoryToAppend.forEach(item => {
+            let message = item.parts[0].text;
+            const sender = item.role;
+            if(message.startsWith('"""Following')){
+                message = extractUserMessage(message);
+            }
+            insertMessageIntoChatbox(`${sender}: ${message}`);
+        });
 
         inputField.addEventListener('keypress', async (event) => {
             if (event.key === 'Enter') {
@@ -237,12 +267,10 @@ function addAIbutton() {
         });
 
         sendButton.addEventListener('click', async () => {
-            const userMessage = inputField.value;
-            if (!userMessage) return;
-
-            const userMessageDiv = document.createElement('div');
-            userMessageDiv.innerText = `You: ${userMessage}`;
-            chatArea.appendChild(userMessageDiv);
+            const userMessage = inputField.value; // get the user's message
+            if (!userMessage) return; // do not send empty messages
+ 
+            insertMessageIntoChatbox(`You: ${userMessage}`);
             inputField.value = '';
 
             try {
@@ -255,18 +283,35 @@ function addAIbutton() {
                 // });
                 // const data = await response.json();
                 
-                const  response = await sendMessage(userMessage);
+                const contents = generatePrompt(userMessage);
+
+                const  response = await sendMessage(contents);
+                console.log("response", response);
                 const botMessageDiv = document.createElement('div');
-                botMessageDiv.innerText = `Bot: ${response.candidates[0].content.parts[0].text}`;
-                chatArea.appendChild(botMessageDiv);
+                const AIreply = response.candidates[0].content.parts[0].text;
+                saveChatMessage("model", AIreply);
+                insertMessageIntoChatbox(`Bot: ${AIreply}`);
             } catch (error) {
                 const errorMessageDiv = document.createElement('div');
                 errorMessageDiv.innerText = 'Error: Could not reach the AI bot.';
+                console.log('Error:', error);
                 chatArea.appendChild(errorMessageDiv);
             }
         });
     });
 }
+
+function insertMessageIntoChatbox(message) {
+    const chatArea = document.getElementById('chatArea');
+    const messageDiv = document.createElement('div');
+    messageDiv.innerText = message;
+    chatArea.appendChild(messageDiv);
+}
+
+let extractUserMessage = (str) => {
+    const match = str.match(/userMessage:\s*(.+)/);
+    return match ? match[1].trim() : null;
+};
 
 const api_key = "AIzaSyAqVTcis_1GqmcSB9eKOTTvgzOEN3PHJIQ";
 
@@ -291,7 +336,7 @@ function loadChat() {
   }
 
 // Send message to the Gemini API
-async function sendMessage(prompt) {
+async function sendMessage(contents) {
     // const userMessage = inputField.value.trim();
     // if (!userMessage) return;
   
@@ -304,13 +349,7 @@ async function sendMessage(prompt) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const requestBody = {
-        contents: [
-            {
-                parts: [
-                    { text: prompt }
-                ]
-            }
-        ]
+       contents
     };
 
     try {
@@ -363,7 +402,7 @@ async function sendMessage(prompt) {
   
   function getCurrentProblemId(){
     const idMatch = window.location.pathname.match(/-(\d+)$/);
-    console.log("current problem id is ",idMatch);
+    console.log("current problem id is ",idMatch[1]);
     return idMatch ? idMatch[1] : null;
   }
 
@@ -400,7 +439,7 @@ bgButton.addEventListener('click',()=>{
     chatbox = document.getElementById('chatbox');
     if(chatbox){
         // chatbox.style.backgroundColor = getBackgroundColor();
-        generatePrompt();
+        // generatePrompt();
     }
 });
 
@@ -409,11 +448,76 @@ function getCurrentLanguage() {
     return element.textContent;
 }
 
-function generatePrompt() {
+function generatePrompt(userMessage) {
     let prompt = "";
     const problemId = getCurrentProblemId();
-    const currentLanguage = getCurrentLanguage();
-    const code = getLocalStorageValueById(problemId, currentLanguage);
-    console.log(code);
+
+    let chatHistory = getChatHistory(problemId);
+
+    if (chatHistory.length === 0) {
+        // build the initial prompt
+
+        const currentLanguage = getCurrentLanguage();
+        const code = getLocalStorageValueById(problemId, currentLanguage);
+        const problemData = getProblemDataById(problemId);
+        
+        //initial prompt
+        const initialPrompt = `"""Following is a message by user, that is trying to understand the following problem.
+        Problem: ${problemData}
+        userCode: ${code}
+        userMessage: ${userMessage}
+        Suggest user how to proceed further"""
+
+        """Strictly do not answer any message which is not related to the problem."""
+        ""'Strictly Always give short and precise answers"""
+        `;
+
+        console.log("initialPrompt", initialPrompt);
+
+        saveChatMessage("user", initialPrompt);
+        chatHistory = getChatHistory(problemId);
+        
+    } else{
+        // build the prompt based on the chat history
+        saveChatMessage("user", userMessage);
+        chatHistory = getChatHistory(problemId);
+    };
+
+    console.log("userMessage", userMessage);
+    console.log("chatHistory", chatHistory);
+
+    const contents = chatHistory;
+
+    return contents;
+
 }
 
+function getChatHistory(chatId) {
+    const chatHistory = localStorage.getItem(`chatHistory_${chatId}`);
+    return chatHistory ? JSON.parse(chatHistory) : [];
+}
+
+function saveChatMessage(Role, userMessage) {
+    chatId = getCurrentProblemId();
+    console.log("savign chat message",`console.log(chatHistory_${chatId})`)
+    let chatHistory = localStorage.getItem(`chatHistory_${chatId}`);
+    if(chatHistory!==null){
+        chatHistory = JSON.parse(chatHistory);
+    }else{
+        chatHistory = [];
+    }
+    chatHistory.push({
+        role: Role,
+        parts: [
+            {text: userMessage}
+        ]
+    });
+    localStorage.setItem(`chatHistory_${chatId}`, JSON.stringify(chatHistory));
+    // const chatHistory = getChatHistory(chatId);
+    // chatHistory.push(message);
+    // localStorage.setItem(`chatHistory_${chatId}`, JSON.stringify(chatHistory));
+}
+
+function clearChatHistory(chatId) {
+    localStorage.removeItem(`chatHistory_${chatId}`);
+}
