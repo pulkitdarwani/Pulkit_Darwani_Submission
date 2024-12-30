@@ -407,7 +407,7 @@ function insertMessageIntoChatbox(message) {
     messageDiv.style.width = 'fit-content';
     messageDiv.innerHTML = message;
     messageDiv.style.maxWidth = '70%';
-    messageDiv.style.margin = user ? '5px 5px 5px auto' : '5px auto 5px 5px';
+    messageDiv.style.margin = user ? '5px 30px 5px auto' : '5px auto 5px 10px';
     messageDiv.style.padding = '10px';
     messageDiv.style.borderRadius = '15px';
     messageDiv.style.wordWrap = 'break-word';
@@ -426,6 +426,14 @@ let extractUserMessage = (str) => {
 };
 
 let api_key = "";
+
+chrome.storage.sync.get(['apiKey'], (result) => {
+    if (result.apiKey) {
+      api_key = result.apiKey;
+    }
+  });
+
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'SET_API_KEY') {
       console.log('Received API Key:', message.apiKey);
