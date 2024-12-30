@@ -10,7 +10,8 @@ const observer = new MutationObserver((mutationsList) => {
     }
 });
 
-let current_model = "Gemini";
+let current_model = "gemini-1.5-pro";
+let model_name = "Gemini"
 
 observer.observe(document.body,{childList:true,subtree:true});
 
@@ -392,15 +393,18 @@ function addAIbutton() {
 
 function insertMessageIntoChatbox(message) {
     let user=true;
+    let myname = "You";
     // let myname = localStorage.getItem('username');
     // if(myname==null || myname==undefined) myname = "You";
-    let myname = "You";
     if(message.startsWith("user")){
         message = message.replace(/^user/, `<b> ${myname} </b>`);
     }else if(message.startsWith("model")){
         user=false;
-        message = message.replace(/^model/, `<b> ${current_model} </b>`);
+        message = message.replace(/^model/, `<b> ${model_name} </b>`);
     }
+
+    message = message.replace(/\n/g, '<br>');
+
     const chatArea = document.getElementById('chatArea');
     const messageDiv = document.createElement('div');
     // messageDiv.innerText = message;
@@ -425,22 +429,31 @@ let extractUserMessage = (str) => {
     return match ? match[1].trim() : null;
 };
 
-let api_key = "";
+let api_key;
+setApiKey();
+console.log("api_key", api_key);
 
-chrome.storage.sync.get(['apiKey'], (result) => {
-    if (result.apiKey) {
-      api_key = result.apiKey;
-    }
-  });
-
+function setApiKey() {
+    chrome.storage.sync.get(['apiKey'], (result) => {
+        console.log("setting api key from chrome storage: ", result.apiKey);
+        if (result.apiKey) {
+            api_key = result.apiKey;
+        }
+    });
+}
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'SET_API_KEY') {
+    console.log("event listened");
+    if (message.type === 'SET_SETTINGS') {
       console.log('Received API Key:', message.apiKey);
+      console.log('Selected Model:', message.model);
       api_key = message.apiKey;
+      current_model = message.model;
+      // Use the API key and model as needed
     }
   });
   
+
 // Load chat history from local storage
 // function loadChat() {
 //     const chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
@@ -471,8 +484,12 @@ async function sendMessage(contents) {
     // loadChat();
     // inputField.value = '';
     
+    if(api_key===""){
+        setApiKey();
+    }
+
     const apiKey = api_key; // Replace with your actual API key
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${current_model}:generateContent?key=${apiKey}`;
 
     const requestBody = {
        contents

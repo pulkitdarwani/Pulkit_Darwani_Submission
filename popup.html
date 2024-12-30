@@ -4,14 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="popup.css">
-  <title>Chatbot API Key</title>
+  <title>Chatbot Settings</title>
 </head>
 <body>
   <div class="container">
     <h1>Chatbot Settings</h1>
-    <form id="api-key-form">
+    <form id="settings-form">
+      <label for="modelSelect">Select Model:</label>
+      <select id="modelSelect" required>
+        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+      </select>
+
       <label for="apiKey">Enter API Key:</label>
       <input type="text" id="apiKey" placeholder="Your API Key" required>
+
       <button type="submit">Save</button>
     </form>
     <p id="status-message"></p>
