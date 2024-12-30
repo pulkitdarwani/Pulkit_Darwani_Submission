@@ -10,6 +10,8 @@ const observer = new MutationObserver((mutationsList) => {
     }
 });
 
+let current_model = "Gemini";
+
 observer.observe(document.body,{childList:true,subtree:true});
 
 addAIbutton();
@@ -59,6 +61,8 @@ function saveUserId(authToken) {
     .then(response => response.json())
     .then(data => {
         let userid = data.data.id;
+        let name = data.data.first_name;
+        localStorage.setItem('username', name);
         localStorage.setItem('userid', userid);
     })
     .catch(error => {
@@ -174,10 +178,10 @@ function addAIbutton() {
 
         const chatbox = document.createElement('div');
         chatbox.id = 'chatbox';
-        chatbox.style.border = '1px solid rgb(164, 230, 255)';
+        // chatbox.style.border = '1px solid rgb(164, 230, 255)';
         chatbox.style.padding = '10px';
-        chatbox.style.marginTop = '10px';
-        chatbox.style.backgroundColor = '#fff';
+        chatbox.style.marginTop = '3px';
+        // chatbox.style.backgroundColor = '#fff';
         chatbox.style.fontSize = '16px';
         chatbox.style.position = 'relative';
         chatbox.style.fontFamily = 'Source Serif Pro', 'serif';
@@ -355,7 +359,7 @@ function addAIbutton() {
             const userMessage = inputField.value; // get the user's message
             if (!userMessage) return; // do not send empty messages
  
-            insertMessageIntoChatbox(`You: ${userMessage}`);
+            insertMessageIntoChatbox(`user: ${userMessage}`);
             inputField.value = '';
 
             try {
@@ -375,7 +379,7 @@ function addAIbutton() {
                 const botMessageDiv = document.createElement('div');
                 const AIreply = response.candidates[0].content.parts[0].text;
                 saveChatMessage("model", AIreply);
-                insertMessageIntoChatbox(`Bot: ${AIreply}`);
+                insertMessageIntoChatbox(`model: ${AIreply}`);
             } catch (error) {
                 const errorMessageDiv = document.createElement('div');
                 errorMessageDiv.innerText = 'Error: Could not reach the AI bot.';
@@ -387,9 +391,32 @@ function addAIbutton() {
 }
 
 function insertMessageIntoChatbox(message) {
+    let user=true;
+    // let myname = localStorage.getItem('username');
+    // if(myname==null || myname==undefined) myname = "You";
+    let myname = "You";
+    if(message.startsWith("user")){
+        message = message.replace(/^user/, `<b> ${myname} </b>`);
+    }else if(message.startsWith("model")){
+        user=false;
+        message = message.replace(/^model/, `<b> ${current_model} </b>`);
+    }
     const chatArea = document.getElementById('chatArea');
     const messageDiv = document.createElement('div');
-    messageDiv.innerText = message;
+    // messageDiv.innerText = message;
+    messageDiv.style.width = 'fit-content';
+    messageDiv.innerHTML = message;
+    messageDiv.style.maxWidth = '70%';
+    messageDiv.style.margin = user ? '5px 5px 5px auto' : '5px auto 5px 5px';
+    messageDiv.style.padding = '10px';
+    messageDiv.style.borderRadius = '15px';
+    messageDiv.style.wordWrap = 'break-word';
+    // messageDiv.style.fontFamily = 'Arial, sans-serif';
+    // messageDiv.style.fontSize = '14px';
+    messageDiv.style.boxShadow = '0px 2px 5px rgba(0,0,0,0.1)';
+    messageDiv.style.backgroundColor = '#DDF6FF'; // Sent messageDiv color
+    // messageDiv.style.color = '#fff';
+    // messageDiv.style.alignSelf = 'flex-end';
     chatArea.appendChild(messageDiv);
 }
 
@@ -398,20 +425,26 @@ let extractUserMessage = (str) => {
     return match ? match[1].trim() : null;
 };
 
-const api_key = "AIzaSyAqVTcis_1GqmcSB9eKOTTvgzOEN3PHJIQ";
-
+let api_key = "";
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'SET_API_KEY') {
+      console.log('Received API Key:', message.apiKey);
+      api_key = message.apiKey;
+    }
+  });
+  
 // Load chat history from local storage
-function loadChat() {
-    const chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
-    chatDiv.innerHTML = '';
-    chatHistory.forEach(entry => {
-      const messageDiv = document.createElement('div');
-      messageDiv.className = 'message';
-      messageDiv.innerHTML = `<span class="${entry.sender}">${entry.sender === 'user' ? 'You' : 'Bot'}:</span> ${entry.text}`;
-      chatDiv.appendChild(messageDiv);
-    });
-    chatDiv.scrollTop = chatDiv.scrollHeight;
-  }
+// function loadChat() {
+//     const chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+//     chatDiv.innerHTML = '';
+//     chatHistory.forEach(entry => {
+//       const messageDiv = document.createElement('div');
+//       messageDiv.className = 'message';
+//       messageDiv.innerHTML = `<span class="${entry.sender}">${entry.sender === 'user' ? 'You' : 'Bot'}:</span> ${entry.text}`;
+//       chatDiv.appendChild(messageDiv);
+//     });
+//     chatDiv.scrollTop = chatDiv.scrollHeight;
+//   }
   
   // Save message to local storage
   function saveMessage(sender, text) {

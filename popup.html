@@ -1,9 +1,21 @@
-<!--
-   index.html
-   Author:
-   Author URI: https://
-   Author Github URI: https://www.github.com/
-   Project Repository URI: https://github.com/
-   Description: The main UI for your Chrome Extension
-   License: MIT
--->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="popup.css">
+  <title>Chatbot API Key</title>
+</head>
+<body>
+  <div class="container">
+    <h1>Chatbot Settings</h1>
+    <form id="api-key-form">
+      <label for="apiKey">Enter API Key:</label>
+      <input type="text" id="apiKey" placeholder="Your API Key" required>
+      <button type="submit">Save</button>
+    </form>
+    <p id="status-message"></p>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
